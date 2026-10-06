@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Barcode Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    #reader {
+      width: 100%;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      display: none;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>📷 Barcode Scanner</h2>
+
+  <div id="reader"></div>
+
+  <div id="result"></div>
+
+  <script>
+
+    function onScanSuccess(decodedText) {
+
+      document.getElementById("result").style.display = "block";
+
+      document.getElementById("result").innerHTML =
+        "<h3>Barcode Found</h3>" +
+        "<p><b>Barcode ID:</b> " +
+        decodedText +
+        "</p>" +
+        "<p>Opening item details...</p>";
+
+      // Send barcode to your Apps Script web app
+      var appUrl =
+        "https://script.google.com/macros/s/AKfycby1OkGHS6MPnc3lR-gGAYX2qjD0ucfpDJ1mHlhFiJyvyw6xmmjouB2rWuG2fLLN9vzf/exec";
+
+      window.location.href =
+        appUrl + "?barcode=" + encodeURIComponent(decodedText);
+    }
+
+    function onScanFailure(error) {
+      // Continue scanning
+    }
+
+    var scanner = new Html5QrcodeScanner(
+      "reader",
+      {
+        fps: 10,
+        qrbox: {
+          width: 300,
+          height: 150
+        },
+
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128
+        ]
+      },
+      false
+    );
+
+    scanner.render(onScanSuccess, onScanFailure);
+
+  </script>
+
+</body>
+</html>
