@@ -1,11 +1,10 @@
-<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Barcode Scanner</title>
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/@zxing/library@0.21.3"></script>
 
   <style>
     body {
@@ -20,8 +19,11 @@
       margin-bottom: 20px;
     }
 
-    #reader {
+    video {
       width: 100%;
+      max-width: 450px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
     }
 
     #result {
@@ -43,52 +45,105 @@
 
   <h2>📷 Barcode Scanner</h2>
 
-  <div id="reader"></div>
+  <video id="video" autoplay muted playsinline></video>
 
   <div id="result"></div>
 
   <script>
 
-    function onScanSuccess(decodedText) {
+    const codeReader = new ZXing.BrowserMultiFormatReader();
 
-      document.getElementById("result").style.display = "block";
+    const videoElement = document.getElementById("video");
+    const resultElement = document.getElementById("result");
 
-      document.getElementById("result").innerHTML =
-        "<h3>Barcode Found</h3>" +
-        "<p><b>Barcode ID:</b> " +
-        decodedText +
-        "</p>" +
-        "<p>Opening item details...</p>";
 
-      // Send barcode to your Apps Script web app
-      var appUrl =
-        "https://script.google.com/macros/s/AKfycby1OkGHS6MPnc3lR-gGAYX2qjD0ucfpDJ1mHlhFiJyvyw6xmmjouB2rWuG2fLLN9vzf/exec";
+    async function startScanner() {
 
-      window.location.href =
-        appUrl + "?barcode=" + encodeURIComponent(decodedText);
+      try {
+
+        const devices = await codeReader.listVideoInputDevices();
+
+        if (devices.length === 0) {
+
+          resultElement.style.display = "block";
+
+          resultElement.innerHTML =
+            "<p>Camera not found.</p>";
+
+          return;
+        }
+
+
+        // Try to select the back/rear camera
+        let selectedDeviceId = devices[0].deviceId;
+
+        for (let i = 0; i < devices.length; i++) {
+
+          const label = devices[i].label.toLowerCase();
+
+          if (
+            label.includes("back") ||
+            label.includes("rear") ||
+            label.includes("environment")
+          ) {
+
+            selectedDeviceId = devices[i].deviceId;
+            break;
+          }
+        }
+
+
+        codeReader.decodeFromVideoDevice(
+          selectedDeviceId,
+          videoElement,
+          (result, error) => {
+
+            if (result) {
+
+              const barcode = result.getText();
+
+              resultElement.style.display = "block";
+
+              resultElement.innerHTML =
+                "<h3>Barcode Found</h3>" +
+                "<p><b>Barcode ID:</b> " +
+                barcode +
+                "</p>" +
+                "<p>Opening item details...</p>";
+
+
+              // Stop scanner
+              codeReader.reset();
+
+
+              // Open your Apps Script lookup page
+              const appUrl =
+                "https://script.google.com/macros/s/AKfycby1OkGHS6MPnc3lR-gGAYX2qjD0ucfpDJ1mHlhFiJyvyw6xmmjouB2rWuG2fLLN9vzf/exec";
+
+
+              window.location.href =
+                appUrl + "?barcode=" +
+                encodeURIComponent(barcode);
+
+            }
+
+          }
+        );
+
+      } catch (error) {
+
+        resultElement.style.display = "block";
+
+        resultElement.innerHTML =
+          "<h3>Camera Error</h3>" +
+          "<p>" +
+          error.message +
+          "</p>";
+      }
     }
 
-    function onScanFailure(error) {
-      // Continue scanning
-    }
 
-    var scanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: {
-          width: 300,
-          height: 150
-        },
-
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.CODE_128
-        ]
-      },
-      false
-    );
-
-    scanner.render(onScanSuccess, onScanFailure);
+    startScanner();
 
   </script>
 
